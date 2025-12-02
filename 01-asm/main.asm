@@ -222,9 +222,7 @@ solve:
 _start:
     mov rdi, file_name
     call read_entire_file
-
     call solve
-
     exit 0
 
 section .data
