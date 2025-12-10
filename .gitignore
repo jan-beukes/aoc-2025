@@ -1,4 +1,5 @@
 */main
 *.cmi
 *.cmx
+input*.txt
 LANGS.md
