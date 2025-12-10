@@ -97,28 +97,27 @@ rect_area :: proc(r: Rect) -> int {
 }
 
 test_rect_intersection :: proc(rect: Rect, shape_edges: Edges) -> bool {
+    // overlap testing
     for edge in shape_edges.vertical {
         if rect.min.x < edge.pos && edge.pos < rect.max.x {
-            start := max(edge.min, rect.min.y)
-            end := min(edge.max, rect.max.y)
-            if start < end {
+            overlap_start := max(edge.min, rect.min.y)
+            overlap_end := min(edge.max, rect.max.y)
+            if overlap_start < overlap_end {
                 return true
             }
 
         }
     }
-
     for edge in shape_edges.horizontal {
         if rect.min.y < edge.pos && edge.pos < rect.max.y {
-            start := max(edge.min, rect.min.x)
-            end := min(edge.max, rect.max.x)
-            if start < end {
+            overlap_start := max(edge.min, rect.min.x)
+            overlap_end := min(edge.max, rect.max.x)
+            if overlap_start < overlap_end {
                 return true
             }
 
         }
     }
-
     return false
 }
 
@@ -136,7 +135,6 @@ point_inside :: proc(cx, cy: f64, positions: []Pos) -> bool {
             }
         }
     }
-
     return inside
 }
 
@@ -162,6 +160,7 @@ largest_area_contained :: proc(positions: []Pos) -> (int, Rect) {
 
             cx:= f64(r.min.x) + 0.5
             cy:= f64(r.min.y) + 0.5
+            // make sure not completely outside
             if !point_inside(cx, cy, positions) {
                 continue
             }
