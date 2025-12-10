@@ -13,6 +13,11 @@ Edge_Type :: enum {
     Vertical,
 }
 
+Rect :: struct {
+    min: Pos,
+    max: Pos,
+}
+
 Edge :: struct {
     type:   Edge_Type,
     pos:    int,       // x or y if vertical or horizontal
@@ -33,7 +38,7 @@ parse_positions :: proc(file: string, allocator := context.allocator) -> []Pos {
         os.exit(1)
     }
     lines := strings.split_lines(strings.trim_space(string(content)))
-    positions := make([]Pos, len(lines))
+    positions := make([]Pos, len(lines) + 1)
 
     for line, i in lines {
         sep_idx := strings.index(line, ",")
@@ -42,6 +47,7 @@ parse_positions :: proc(file: string, allocator := context.allocator) -> []Pos {
         y, _ := strconv.parse_int(line[sep_idx + 1:])
         positions[i] = { x, y }
     }
+    positions[len(positions) - 1] = positions[0]
 
     return positions
 }
@@ -69,17 +75,10 @@ get_edges :: proc(positions: []Pos) -> Edges {
     vertical_edges := make([dynamic]Edge)
     horizontal_edges := make([dynamic]Edge)
 
-    first, last := positions[0], positions[len(positions)-1]
-    edge := edge_from_positions(first, last)
-    if edge.type == .Vertical {
-        append(&vertical_edges, edge)
-    } else {
-        append(&horizontal_edges, edge)
-    }
     for i in 1..<len(positions) {
         pos := positions[i]
         prev := positions[i-1]
-        edge = edge_from_positions(prev, pos)
+        edge := edge_from_positions(prev, pos)
         if edge.type == .Vertical {
             append(&vertical_edges, edge)
         } else {
@@ -93,81 +92,105 @@ get_edges :: proc(positions: []Pos) -> Edges {
     }
 }
 
-rect_area :: proc(a, b: Pos) -> int {
-    return (abs(b.x - a.x) + 1) * (abs(b.y - a.y) + 1)
+rect_area :: proc(r: Rect) -> int {
+    return (r.max.x - r.min.x + 1) * (r.max.y - r.min.y + 1)
 }
 
-is_edge_outside :: proc(edge: Edge, shape_edges: Edges) -> bool {
-    intersection_test_edges: []Edge
-    if edge.type == .Vertical {
-        intersection_test_edges = shape_edges.horizontal
-    } else {
-        intersection_test_edges = shape_edges.vertical
+test_rect_intersection :: proc(rect: Rect, shape_edges: Edges) -> bool {
+    for edge in shape_edges.vertical {
+        if rect.min.x < edge.pos && edge.pos < rect.max.x {
+            start := max(edge.min, rect.min.y)
+            end := min(edge.max, rect.max.y)
+            if start < end {
+                return true
+            }
+
+        }
     }
 
-    found_smaller := false
-    found_bigger := false
-    for e in intersection_test_edges {
-        if e.min <= edge.pos && edge.pos <= e.max {
-            // make sure edge is inside
-            if e.pos >= edge.max do found_bigger = true
-            if e.pos <= edge.min do found_smaller = true
-            // don't count corners
-            if edge.pos == e.min || edge.pos == e.max do continue
-
-            if edge.min < e.pos && e.pos < edge.max {
+    for edge in shape_edges.horizontal {
+        if rect.min.y < edge.pos && edge.pos < rect.max.y {
+            start := max(edge.min, rect.min.x)
+            end := min(edge.max, rect.max.x)
+            if start < end {
                 return true
+            }
+
+        }
+    }
+
+    return false
+}
+
+point_inside :: proc(cx, cy: f64, positions: []Pos) -> bool {
+    inside := false
+
+    for i in 1..<len(positions) {
+        pos, prev := positions[i], positions[i-1]
+        x1, y1 := f64(prev.x), f64(prev.y)
+        x2, y2 := f64(pos.x), f64(pos.y)
+
+        if (y1 > cy) != (y2 > cy) {
+            if cx < x1 {
+                inside = !inside
             }
         }
     }
-    // make sure edge is not completely outside
-    return !(found_smaller && found_bigger)
+
+    return inside
 }
 
-largest_area_contained :: proc(positions: []Pos) -> (int, [2]Pos) {
+largest_area_contained :: proc(positions: []Pos) -> (int, Rect) {
     edges := get_edges(positions)
 
     max_area: int
-    max_points: [2]Pos
+    max_rect: Rect
     for i in 0..<len(positions) {
         pairs: for j in i+1..<len(positions) {
             a, c := positions[i], positions[j]
-            dx, dy := c.x - a.x, c.y - a.y
-            b, d := Pos{ a.x + dx, a.y }, Pos{ a.x, a.y + dy }
+            min := Pos{ min(a.x, c.x), min(a.y, c.y) }
+            max := Pos{ max(a.x, c.x), max(a.y, c.y) }
+            r := Rect{ min, max }
+            area := rect_area(r)
+            if area <= max_area {
+                continue
+            }
 
-            ab := edge_from_positions(a, b)
-            bc := edge_from_positions(b, c)
-            cd := edge_from_positions(c, d)
-            da := edge_from_positions(d, a)
-            for e in ([]Edge{ab, bc, cd, da}) {
-                if is_edge_outside(e, edges) {
-                    continue pairs
-                }
+            if test_rect_intersection(r, edges) {
+                continue
             }
-            area := rect_area(a, c)
-            if area > max_area {
-                max_area = area
-                max_points = { a, c }
+
+            cx:= f64(r.min.x) + 0.5
+            cy:= f64(r.min.y) + 0.5
+            if !point_inside(cx, cy, positions) {
+                continue
             }
+
+            max_area = area
+            max_rect = r
+
         }
     }
-    return max_area, max_points
+    return max_area, max_rect
 }
 
-largest_area :: proc(positions: []Pos) -> (int, [2]Pos) {
+largest_area :: proc(positions: []Pos) -> (int, Rect) {
     max_area: int
-    max_points: [2]Pos
+    max_rect: Rect
     for i in 0..<len(positions) {
         for j in i+1..<len(positions) {
             a, c := positions[i], positions[j]
-            area := rect_area(a, c)
+            min := Pos{ min(a.x, c.x), min(a.y, c.y) }
+            max := Pos{ max(a.x, c.x), max(a.y, c.y) }
+            r := Rect{ min, max }
+            area := rect_area(r)
             if area > max_area {
                 max_area = area
-                max_points = { a, c }
+                max_rect = r
             }
         }
     }
-    return max_area, max_points
+    return max_area, max_rect
 }
 
 INPUT_FILE :: "input.txt"

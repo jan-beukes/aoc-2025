@@ -9,21 +9,19 @@ draw_shape :: proc(positions: []Pos) {
         prev := positions[i-1]
         rl.DrawLine(i32(prev.x), i32(prev.y), i32(pos.x), i32(pos.y), rl.RED)
     }
-    first, last := positions[0], positions[len(positions)-1]
-    rl.DrawLine(i32(last.x), i32(last.y), i32(first.x), i32(first.y), rl.RED)
 }
 
-draw_rectangle_from_max :: proc(max_rect: [2]Pos, color: rl.Color) {
-    x := min(max_rect[0].x, max_rect[1].x)
-    y := min(max_rect[0].y, max_rect[1].y)
-    w := max(1, abs(max_rect[1].x - max_rect[0].x))
-    h := max(1, abs(max_rect[1].y - max_rect[0].y))
+draw_rect :: proc(rect: Rect, color: rl.Color) {
+    x := rect.min.x
+    y := rect.min.y
+    w := rect.max.x - rect.min.x
+    h := rect.max.y - rect.min.y
     rl.DrawRectangle(i32(x), i32(y), i32(w), i32(h), color)
 }
 
-visualize :: proc(positions: []Pos, max_rect, max_rect_contained: [2]Pos) {
-    max_area := rect_area(max_rect[0], max_rect[1])
-    max_area_contained := rect_area(max_rect_contained[0], max_rect_contained[1])
+visualize :: proc(positions: []Pos, max_rect, max_rect_contained: Rect) {
+    max_area := rect_area(max_rect)
+    max_area_contained := rect_area(max_rect_contained)
 
     part_one_color := rl.BLUE
     part_two_color := rl.GREEN
@@ -62,8 +60,8 @@ visualize :: proc(positions: []Pos, max_rect, max_rect_contained: [2]Pos) {
         rl.BeginDrawing()
         rl.BeginMode2D(camera)
 
-        draw_rectangle_from_max(max_rect, rl.Fade(part_one_color, 0.8))
-        draw_rectangle_from_max(max_rect_contained, rl.Fade(part_two_color, 0.8))
+        draw_rect(max_rect, rl.Fade(part_one_color, 0.8))
+        draw_rect(max_rect_contained, rl.Fade(part_two_color, 0.8))
 
         draw_shape(positions)
         rl.EndMode2D()
