@@ -32,26 +32,23 @@ def part_two(joltage_list, buttons_list):
 def fewest_presses(target, buttons):
     queue = Queue()
     visited = set()
-    minimum = 69
 
     queue.put((0, 0))
     while not queue.empty():
         (lights, count) = queue.get()
-        if count > minimum: continue
         if lights in visited:
             continue
         else:
             visited.add(lights)
 
         if lights == target:
-            minimum = count if count < minimum else minimum
-            continue
+            return count
 
         for button in buttons:
             next_state = lights ^ button
             queue.put((next_state, count + 1))
 
-    return minimum
+    return 69
 
 def part_one(lights_list, buttons_list):
     total = 0
