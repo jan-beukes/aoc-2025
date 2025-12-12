@@ -1,7 +1,3 @@
-// NOTE: I did not come up with this solution. This is taken from Sebastiano Tronto
-// who was able to solve part two without an external linear programming library/tool
-// https://git.tronto.net/aoc/file/2025/10/b.py.html
-
 #![allow(dead_code)]
 
 #[derive(Debug)]
