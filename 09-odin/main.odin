@@ -5,7 +5,7 @@ import "core:slice"
 import "core:strings"
 import "core:strconv"
 import "core:fmt"
-import "core:testing"
+import "core:time"
 
 Pos :: [2]int
 Edge_Type :: enum {
@@ -196,6 +196,8 @@ INPUT_FILE :: "input.txt"
 main :: proc() {
     args := os.args
 
+    start_tick := time.tick_now()
+
     input_file := INPUT_FILE
     vis_flag := false
 
@@ -213,6 +215,8 @@ main :: proc() {
 
     fmt.println("Part one: ", area)
     fmt.println("Part two: ", area_contained)
+
+    fmt.println("took", time.tick_since(start_tick))
 
     if vis_flag {
         visualize(positions, max_rect, max_rect_contained)

@@ -42,7 +42,6 @@ fn topological_paths(adj: &AdjList, start: Id, end: Id, problem: (Id, Id)) -> us
         }
     }
 
-
     let mut dp_paths = vec![0; n];
     dp_paths[start] = 1;
 
@@ -65,7 +64,7 @@ fn part_two(adj: &AdjList, start: Id, end: Id, problem: (Id, Id)) -> usize {
     topological_paths(adj, start, end, problem)
 }
 
-// this is too slow for part two
+// this is too slow for part two (without memoization)
 fn dfs_paths(node: Id, end: Id, adj: &AdjList, visited: &mut Vec<bool>) -> usize {
     if node == end {
         1
@@ -91,6 +90,8 @@ fn part_one(adj: &AdjList, start: Id, end: Id) -> usize {
 }
 
 fn main() {
+    let time_start = std::time::Instant::now();
+
     let content = std::fs::read_to_string(INPUT_FILE)
         .expect("File not found");
     let lines: Vec<_> = content.trim().lines().collect();
@@ -123,4 +124,5 @@ fn main() {
         let problem = (id_map["dac"], id_map["fft"]);
         println!("Part two: {}", part_two(&adj, *start, out, problem));
     }
+    println!("took {:?}", time_start.elapsed());
 }
